@@ -28,17 +28,18 @@ jobs:
       - name: Generate dynamic output file name
         id: generate-filename
         run: |
-          FILE_NAME="results/output_$(date +'%y%m%d_%H%M')_${{ github.actor }}.csv"
+          mkdir -p results
+          FILE_NAME="output_$(date +'%y%m%d_%H%M')_${{ github.actor }}.csv"
           echo "FILE_NAME=$FILE_NAME" >> $GITHUB_ENV
 
       - name: Run the script
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
-          python your_script.py --input_json_path input.json \
-                                --prompt_file prompt.txt \
-                                --example_file examples.json \
-                                --output_csv_path ${{ env.FILE_NAME }} \
+          python your_script.py --input_json_path data/input.json \
+                                --prompt_file data/prompt.txt \
+                                --example_file data/examples.json \
+                                --output_csv_path results/${{ env.FILE_NAME }} \
                                 --model_id anthropic/claude-3.5-sonnet
 
       - name: Commit and push results
