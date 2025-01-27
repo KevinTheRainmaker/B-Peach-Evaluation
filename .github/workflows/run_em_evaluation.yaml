@@ -36,7 +36,7 @@ jobs:
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
-          python your_script.py --input_json_path data/input.json \
+          python auto_test.py --input_json_path data/input.json \
                                 --prompt_file data/prompt.txt \
                                 --example_file data/examples.json \
                                 --output_csv_path results/${{ env.FILE_NAME }} \
