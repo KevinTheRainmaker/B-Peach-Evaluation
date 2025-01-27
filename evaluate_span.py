@@ -3,8 +3,16 @@ import json
 import argparse
 import re
 from tqdm import tqdm
+import os
 
-API_KEY = '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'
+if os.environ.get("GITHUB_ACTIONS") is None:
+    from dotenv import load_dotenv
+    print('Load API Key from Local .env file..')
+    load_dotenv()
+else:
+    print('Load API Key from GitHub Secrets..')
+
+API_KEY = os.getenv('API_KEY') 
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
 

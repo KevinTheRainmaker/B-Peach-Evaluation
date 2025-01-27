@@ -7,10 +7,17 @@ import argparse
 from tqdm import tqdm
 from konlpy.tag import Okt
 import os
+from datetime import datetime
 
+if os.environ.get("GITHUB_ACTIONS") is None:
+    from dotenv import load_dotenv
+    print('Load API Key from Local .env file..')
+    load_dotenv()
+else:
+    print('Load API Key from GitHub Secrets..')
+    
 API_KEY = os.getenv('API_KEY') 
 
-# API_KEY = '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'
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
 def get_response_from_model(model_id, prompt, test, example=None):
@@ -69,24 +76,40 @@ def create_test_data(json_data):
     test_data = []
     okt = Okt()
 
-    for passage in json_data:
+    for passage in tqdm(json_data, desc="Processing passages..."):  # tqdm을 passage 단위로 적용
         if passage.startswith('"') and passage.endswith('"'):
             passage = passage[1:-1]  # Remove quotation marks
-        inputs = [passage]  # Treat the entire passage as one input
-        for input in inputs:
-            nouns = [word for word, tag in okt.pos(input) if tag == 'Noun'] # Select only Noun
-            if len(nouns) > 1:
-                num_tags = random.randint(1, min(5, len(nouns)))  # Random number of tags (1 to 5 or noun count)
-                selected_words = random.sample(nouns, num_tags)
-                tagged_sentence = input
-                for word in selected_words:
-                    tagged_sentence = re.sub(
-                        rf"(?<!<span adaptation='no'>){word}(?!<\/span>)",
-                        f"<span adaptation='no'>{word}</span>",
-                        tagged_sentence,
-                        count=1
-                    )
-                test_data.append(tagged_sentence)
+
+        # 텍스트를 문장 단위로 분리
+        sentences = re.split(r'[.!?]', passage)
+        sentences = [s.strip() for s in sentences if s.strip()]
+
+        # 문장별 명사 태깅
+        tagged_sentences = []
+        all_nouns = []
+        for sentence in sentences:
+            nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
+            all_nouns.extend(nouns)
+
+        # 태깅할 명사 선택 (1~5개)
+        if len(all_nouns) > 1:
+            num_tags = random.randint(1, min(5, len(all_nouns)))  # 1~5개 랜덤 선택
+            selected_words = random.sample(all_nouns, num_tags)
+
+            # 선택된 단어를 passage 전체에서 태깅
+            tagged_passage = passage
+            for word in selected_words:
+                tagged_passage = re.sub(
+                    rf"(?<!<span adaptation='no'>){word}(?!<\/span>)",
+                    f"<span adaptation='no'>{word}</span>",
+                    tagged_passage,
+                    count=1
+                )
+            test_data.append(tagged_passage)
+        else:
+            test_data.append(passage)
+
+    print(len(test_data))
     return test_data
 
 
@@ -133,14 +156,18 @@ def main(args):
     print(f"Results saved to {args.output_csv_path}")
 
 if __name__ == "__main__":
+    now = datetime.now()
+    file_name = now.strftime("output_%y%m%d_%H%M.csv")
+    os.makedirs('results', exist_ok=True)
+    
     parser = argparse.ArgumentParser()
-    parser.add_argument("--input_json_path", type=str, default="input.json", help="Path to the input JSON file.")
-    parser.add_argument("--prompt_file", type=str, help="Path to the prompt file", default="prompt.txt")
-    parser.add_argument("--example_file", type=str, help="Path to the example file (.json)", default="examples.json")
+    parser.add_argument("--input_json_path", type=str, default="data/input.json", help="Path to the input JSON file.")
+    parser.add_argument("--prompt_file", type=str, help="Path to the prompt file", default="data/prompt.txt")
+    parser.add_argument("--example_file", type=str, help="Path to the example file (.json)", default="data/examples.json")
 
     parser.add_argument("--iterations", type=int, default=5, help="Number of iterations to run.")
     
-    parser.add_argument("--output_csv_path", type=str, required=True, help="Path to save the output CSV file.")
+    parser.add_argument("--output_csv_path", type=str, default=f'results/{file_name}', help="Path to save the output CSV file.")
     parser.add_argument("--model_id", type=str, help="Model ID of the model you want to use", default="anthropic/claude-3.5-sonnet")
 
     args = parser.parse_args()
