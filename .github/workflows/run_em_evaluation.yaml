@@ -11,9 +11,14 @@ jobs:
   run-script:
     runs-on: ubuntu-latest
 
+    permissions: # GitHub Actions에 푸시 권한 부여
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v3
