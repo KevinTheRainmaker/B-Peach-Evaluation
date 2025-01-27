@@ -1,0 +1,50 @@
+name: Run Python Script on Data Change
+
+on:
+  push:
+    branches:
+      - main # main 브랜치에서만 동작
+    paths:
+      - "data/**" # data 폴더 내의 모든 파일 변경 시 트리거
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate dynamic output file name
+        id: generate-filename
+        run: |
+          FILE_NAME="results/output_$(date +'%y%m%d_%H%M')_${{ github.actor }}.csv"
+          echo "FILE_NAME=$FILE_NAME" >> $GITHUB_ENV
+
+      - name: Run the script
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          python your_script.py --input_json_path input.json \
+                                --prompt_file prompt.txt \
+                                --example_file examples.json \
+                                --output_csv_path ${{ env.FILE_NAME }} \
+                                --model_id anthropic/claude-3.5-sonnet
+
+      - name: Commit and push results
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add ${{ env.FILE_NAME }}
+          git commit -m "Update results"
+          git push
