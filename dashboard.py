@@ -24,7 +24,7 @@ else:
     ACCESS_TOKEN = st.secrets["ACCESS_TOKEN"]
 
 # Get the list of files in the GitHub folder
-@st.cache_data
+# @st.cache_data
 def get_file_list():
     headers = {"Authorization": f"token {ACCESS_TOKEN}"}
     url = f"{GITHUB_API_URL}/{OWNER}/{REPO}/contents/{FOLDER_PATH}"
@@ -38,7 +38,7 @@ def get_file_list():
         return []
 
 # Fetch the content of a specific CSV file
-@st.cache_data
+# @st.cache_data
 def fetch_csv_content(file_name):
     headers = {"Authorization": f"token {ACCESS_TOKEN}"}
     url = f"{GITHUB_API_URL}/{OWNER}/{REPO}/contents/{FOLDER_PATH}/{file_name}"
