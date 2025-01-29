@@ -69,11 +69,19 @@ files = get_file_list()
 if files:
     st.sidebar.write(f"📂 Found {len(files)} CSV files in the folder.")
     
-    # Display the list of files in the sidebar
-    selected_file = st.sidebar.selectbox("Select a file to preview", files)
-    
-    # Aggregate data and display summary
-    with st.spinner("📊 Aggregating data..."):
+    # Use session state to store selected file
+    if "selected_file" not in st.session_state:
+        st.session_state.selected_file = files[0]  # Default to first file
+
+    selected_file = st.sidebar.selectbox(
+        "Select a file to preview",
+        files,
+        index=files.index(st.session_state.selected_file),
+        key="selected_file"
+    )
+
+    # Aggregate all data
+    with st.spinner("📊 Aggregating all CSV data..."):
         aggregated_data = aggregate_csv_files(files)
 
     if not aggregated_data.empty:
