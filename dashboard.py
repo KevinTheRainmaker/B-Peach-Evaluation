@@ -18,10 +18,10 @@ if os.environ.get("GITHUB_ACTIONS") is None:
     from dotenv import load_dotenv
     print('Loading API Key from local .env file...')
     load_dotenv()
+    ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
 else:
     print('Loading API Key from GitHub Secrets...')
-
-ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
+    ACCESS_TOKEN = st.secrets["ACCESS_TOKEN"]
 
 # Get the list of files in the GitHub folder
 @st.cache_data
