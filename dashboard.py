@@ -7,7 +7,7 @@ import seaborn as sns
 from io import StringIO
 import os 
 
-# GitHub API 기본 설정
+# GitHub Access token 설정
 GITHUB_API_URL = "https://api.github.com/repos"
 OWNER = "KevinTheRainmaker"  # 깃허브 사용자명
 REPO = "B-Peach-Evaluation"  # 레포지토리 이름
@@ -20,7 +20,7 @@ if os.environ.get("GITHUB_ACTIONS") is None:
     load_dotenv()
     ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
 else:
-    print('Loading API Key from GitHub Secrets...')
+    print('Loading API Key from Streamlit Secrets...')
     ACCESS_TOKEN = st.secrets["ACCESS_TOKEN"]
 
 # Get the list of files in the GitHub folder
@@ -75,14 +75,20 @@ if files:
     # Aggregate data and display summary
     with st.spinner("📊 Aggregating data..."):
         aggregated_data = aggregate_csv_files(files)
-        
+
     if not aggregated_data.empty:
         st.subheader("📋 Aggregated Data Overview")
         st.dataframe(aggregated_data.head(10))
-        
-        # Display statistics
-        st.sidebar.subheader("📊 Data Statistics")
-        st.sidebar.write(aggregated_data.describe())
+
+        # Load the selected file separately for statistics
+        with st.spinner(f"📄 Loading {selected_file} statistics..."):
+            selected_data = fetch_csv_content(selected_file)
+            if not selected_data.empty:
+                selected_data['span_count'] = selected_data['original_passage'].str.count(r'<span')
+
+                # Display statistics for the selected file
+                st.sidebar.subheader(f"📊 Statistics for {selected_file}")
+                st.sidebar.write(selected_data.describe())
         
         # Visualize with a boxplot
         st.subheader("📈 Boxplot of EM Score by Number of <span> Tags")
