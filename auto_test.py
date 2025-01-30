@@ -84,34 +84,41 @@ def create_test_data(json_data):
         sentences = re.split(r'[.!?]', passage)
         sentences = [s.strip() for s in sentences if s.strip()]
 
-        # 문장별 명사 태깅
-        all_nouns = []
-        # all_words = []
+        all_candidates = []
+
         for sentence in sentences:
-            # words = sentence.split()
-            # nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
-            # nouns = [word for word in words if 'Noun' in [tag for _, tag in okt.pos(word)]]
-            nouns = [word for word in okt.nouns(sentence) if len(word) > 1]
-            all_nouns.extend(nouns)
-            # all_words.extend(words) # 이하 등장하는 all_nouns를 모두 all_words로 변경함
+            phrases = [phrase for phrase in okt.phrases(sentence) if len(phrase) > 1]  # 긴 어구 우선
+            nouns = [word for word in okt.nouns(sentence) if len(word) > 1]  # 단일 명사
 
-        # 태깅할 명사 선택 (1~5개)
-        if len(all_nouns) > 1:
-            num_tags = random.randint(1, min(5, len(all_nouns)))  # 1~5개 랜덤 선택
-            selected_words = random.sample(all_nouns, num_tags)
+            # phrases 중 포함된 단어(nouns) 제거 (ex: "전통 가옥"이 있으면 "전통", "가옥"은 제거)
+            filtered_nouns = [word for word in nouns if not any(word in phrase for phrase in phrases)]
 
-            # 선택된 단어를 passage 전체에서 태깅
-            tagged_passage = passage
-            for word in selected_words:
-                tagged_passage = re.sub(
-                    rf"(?<!<span adaptation='no'>){word}(?!<\/span>)",
-                    f"<span adaptation='no'>{word}</span>",
-                    tagged_passage,
-                    count=1
-                )
-            test_data.append(tagged_passage)
-        else:
-            test_data.append(passage)
+            # 긴 어구 + 필터링된 명사
+            candidates = list(set(phrases + filtered_nouns))
+            candidates.sort(key=len, reverse=True)  # 긴 단어(어구) 우선 정렬
+
+            all_candidates.extend(candidates)
+
+        # 최종 태깅 후보 중에서 서로 중복되지 않는 단어/어구 선택
+        selected_words = []
+        for word in all_candidates:
+            if not any(word in selected for selected in selected_words):
+                selected_words.append(word)
+
+        # 1~5개 태깅 (최대 5개까지만 선택)
+        num_tags = random.randint(1, min(5, len(selected_words)))
+        selected_words = random.sample(selected_words, num_tags)
+
+        # 선택된 단어를 passage 전체에서 태깅
+        tagged_passage = passage
+        for word in selected_words:
+            tagged_passage = re.sub(
+                rf"(?<!<span adaptation='no'>){word}(?!<\/span>)",
+                f"<span adaptation='no'>{word}</span>",
+                tagged_passage,
+                count=1
+            )
+        test_data.append(tagged_passage)
 
     print(len(test_data))
     return test_data
