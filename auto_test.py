@@ -91,7 +91,7 @@ def create_test_data(json_data):
         for sentence in sentences:
             # nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
             words = sentence.split()
-            nouns = [word for word, tag in okt.nouns(sentence)]
+            nouns = [word for word in okt.nouns(sentence)]
             all_nouns.extend(words)
             # all_words.extend(words) # 이하 등장하는 all_nouns를 모두 all_words로 변경함
 
