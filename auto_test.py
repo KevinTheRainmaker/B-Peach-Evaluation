@@ -85,12 +85,12 @@ def create_test_data(json_data):
         sentences = [s.strip() for s in sentences if s.strip()]
 
         # 문장별 명사 태깅
-        tagged_sentences = []
         all_nouns = []
         # all_words = []
         for sentence in sentences:
+            words = sentence.split()
             # nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
-            nouns = [word for word in okt.nouns(sentence)]
+            nouns = [word for word in words if 'Noun' in [tag for _, tag in okt.pos(word)]]
             all_nouns.extend(nouns)
             # all_words.extend(words) # 이하 등장하는 all_nouns를 모두 all_words로 변경함
 
