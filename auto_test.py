@@ -86,15 +86,18 @@ def create_test_data(json_data):
 
         # 문장별 명사 태깅
         tagged_sentences = []
-        all_nouns = []
+        # all_nouns = []
+        all_words = []
         for sentence in sentences:
-            nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
-            all_nouns.extend(nouns)
+            # nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
+            words = sentence.split()
+            # all_nouns.extend(words)
+            all_words.extend(words) # 이하 등장하는 all_nouns를 모두 all_words로 변경함
 
         # 태깅할 명사 선택 (1~5개)
-        if len(all_nouns) > 1:
-            num_tags = random.randint(1, min(5, len(all_nouns)))  # 1~5개 랜덤 선택
-            selected_words = random.sample(all_nouns, num_tags)
+        if len(all_words) > 1:
+            num_tags = random.randint(1, min(5, len(all_words)))  # 1~5개 랜덤 선택
+            selected_words = random.sample(all_words, num_tags)
 
             # 선택된 단어를 passage 전체에서 태깅
             tagged_passage = passage
