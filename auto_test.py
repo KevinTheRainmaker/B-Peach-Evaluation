@@ -90,9 +90,8 @@ def create_test_data(json_data):
         # all_words = []
         for sentence in sentences:
             # nouns = [word for word, tag in okt.pos(sentence) if tag == 'Noun']
-            words = sentence.split()
             nouns = [word for word in okt.nouns(sentence)]
-            all_nouns.extend(words)
+            all_nouns.extend(nouns)
             # all_words.extend(words) # 이하 등장하는 all_nouns를 모두 all_words로 변경함
 
         # 태깅할 명사 선택 (1~5개)
