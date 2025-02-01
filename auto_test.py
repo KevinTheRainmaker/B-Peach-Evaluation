@@ -142,22 +142,23 @@ def main(args):
         test_data = create_test_data(json_data)
 
         for test in tqdm(test_data, desc="Evaluating..."):
-            try:
-                response = get_response_from_model(args.model_id, prompt, test, examples)
-                
-                pattern = r"3\. 정리.*?\n([\s\S]+)$"
-                extracted = re.split(pattern, response)[1] if "3. 정리" in response else ""
+            l_o, ori_word = extract_annotated_spans(test)
+            for _ in range(5):
+                try:
+                    response = get_response_from_model(args.model_id, prompt, test, examples)
+                    
+                    pattern = r"3\. 정리.*?\n([\s\S]+)$"
+                    extracted = re.split(pattern, response)[1] if "3. 정리" in response else ""
 
-                l_o, ori_word = extract_annotated_spans(test)
-                l_r, res_word = extract_annotated_spans(extracted)
+                    l_r, res_word = extract_annotated_spans(extracted)
 
-                matches = set(ori_word).intersection(set(res_word))
-                em = len(matches) / l_o if l_o else 0
+                    matches = set(ori_word).intersection(set(res_word))
+                    em = len(matches) / l_o if l_o else 0
 
-                all_results.append([test, ori_word, extracted, em])
+                    all_results.append([test, ori_word, extracted, em])
 
-            except Exception as e:
-                print(f"Error processing test: {test}\n{e}")
+                except Exception as e:
+                    print(f"Error processing test: {test}\n{e}")
 
     with open(args.output_csv_path, 'w', encoding='utf-8', newline='') as file:
         writer = csv.writer(file)
