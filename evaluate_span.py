@@ -14,7 +14,7 @@ else:
 
 API_KEY = os.getenv('API_KEY') 
 OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
-
+BASE = "data"
 
 def get_response_from_model(model_id, prompt, test, example=None):
     headers = {
@@ -45,7 +45,7 @@ def get_response_from_model(model_id, prompt, test, example=None):
 
     data["messages"].append({
         "role": "user",
-        "content": test,
+        "content": f"<im>{test}</im>",
     })
 
     try:
@@ -68,13 +68,20 @@ def extract_annotated_spans(text: str):
 
     return len(matches), matches
 
+def extract_think_spans(text: str):
+    pattern = r"<think>(.*?)</think>"
+
+    matches = re.findall(pattern, text, re.DOTALL)
+
+    return matches
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser() # argparse에 미친 자..
     parser.add_argument("--model_id", type=str, help="Model ID of the model you want to use", default="anthropic/claude-3.5-sonnet")
-    parser.add_argument("--prompt_file", type=str, help="Path to the prompt file", default="prompt.txt")
-    parser.add_argument("--example_file", type=str, help="Path to the example file (.json)", default="examples.json")
-    parser.add_argument("--test_file", type=str, help="Path to the test file that contains test examples", default="test.json")
+    parser.add_argument("--prompt_file", type=str, help="Path to the prompt file", default=os.path.join(BASE, "prompt.txt"))
+    parser.add_argument("--example_file", type=str, help="Path to the example file (.json)", default=None)
+    parser.add_argument("--test_file", type=str, help="Path to the test file that contains test examples", default=os.path.join(BASE, "input.json"))
     parser.add_argument("--output_file", type=str, help="Output filename; all results including responses and EM score.", default="results.json")
     args = parser.parse_args() 
     
@@ -82,9 +89,12 @@ if __name__ == "__main__":
     with open(args.prompt_file, 'r', encoding='utf-8') as f:
         prompt = f.read()
     
-    with open(args.example_file, 'r', encoding='utf-8') as f:
-        examples = json.load(f)
-        
+    if args.example_file:
+        with open(args.example_file, 'r', encoding='utf-8') as f:
+            examples = json.load(f)
+    else:
+        examples = None
+    
     with open(args.test_file, 'r', encoding='utf-8') as f:
         tests = json.load(f)
     print("Files read successfully.")
@@ -96,8 +106,13 @@ if __name__ == "__main__":
     for test in tqdm(tests, desc="Evaluating..."):
         response = get_response_from_model(args.model_id, prompt, test, examples) # 모델 응답 받기
         try:
-            pattern = r"3\. 정리.*?\n([\s\S]+)$"
-            extracted = re.split(pattern, response)[1] # 전체 응답에서 3. 정리 부분(번안문)만 추출
+            print(response)
+            # This pattern matches text enclosed in <answer> tags
+            pattern = r"<answer>(.*?)</answer>"
+            match = re.search(pattern, response, re.DOTALL)
+            extracted = match.group(1)# 전체 응답에서 3. 정리 부분(번안문)만 추출
+            
+            think_process = extract_think_spans(response)
             
             l_o, ori_word = extract_annotated_spans(test)
             l_r, res_word = extract_annotated_spans(extracted)
@@ -108,7 +123,8 @@ if __name__ == "__main__":
             
             results.append({
                 "original_passage": test,
-                "response": response,
+                "response": extracted,
+                "think_process": think_process if think_process else None,
                 "original_spans": ori_word,
                 "response_spans": res_word,
                 "em_score": em
@@ -121,7 +137,10 @@ if __name__ == "__main__":
             print(f"Error encountered: {str(e)}")
             continue
     
-    print(f"Total EM Score: {total_matches / total_spans}") # 전체 EM score 출력
+    if total_spans:
+        print(f"Total EM Score: {total_matches / total_spans}") # 전체 EM score 출력
+    else:
+        print("No spans found.")
     
     with open(args.output_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

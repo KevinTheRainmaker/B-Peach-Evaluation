@@ -147,8 +147,10 @@ def main(args):
                 try:
                     response = get_response_from_model(args.model_id, prompt, test, examples)
                     
-                    pattern = r"3\. 정리.*?\n([\s\S]+)$"
-                    extracted = re.split(pattern, response)[1] if "3. 정리" in response else ""
+                    pattern = r"<answer>(.*?)</answer>"
+                    match = re.search(pattern, response, re.DOTALL)
+                    extracted = match.group(1) # 전체 응답에서  정리 부분(번안문)만 추출
+                    # extracted = re.split(pattern, response)[1] if "3. 정리" in response else ""
 
                     l_r, res_word = extract_annotated_spans(extracted)
 
@@ -175,7 +177,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_json_path", type=str, default="data/input.json", help="Path to the input JSON file.")
     parser.add_argument("--prompt_file", type=str, help="Path to the prompt file", default="data/prompt.txt")
-    parser.add_argument("--example_file", type=str, help="Path to the example file (.json)", default="data/examples.json")
+    parser.add_argument("--example_file", type=str, help="Path to the example file (.json)", default=None)
 
     parser.add_argument("--iterations", type=int, default=5, help="Number of iterations to run.")
     
