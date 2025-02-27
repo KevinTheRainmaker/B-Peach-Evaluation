@@ -43,9 +43,9 @@ jobs:
         run: |
           python auto_test.py --input_json_path data/input.json \
                                 --prompt_file data/prompt.txt \
-                                --example_file data/examples.json \
                                 --output_csv_path results/${{ env.FILE_NAME }} \
-                                --model_id anthropic/claude-3.5-sonnet
+                                --model_id anthropic/claude-3.5-sonnet 
+#                                --example_file data/examples.json \                                
 
       - name: Commit and push results
         run: |
