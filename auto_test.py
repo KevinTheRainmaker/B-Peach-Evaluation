@@ -128,8 +128,11 @@ def main(args):
     with open(args.prompt_file, 'r', encoding='utf-8') as f:
         prompt = f.read()
 
-    with open(args.example_file, 'r', encoding='utf-8') as f:
-        examples = json.load(f)
+    if args.example_file:
+        with open(args.example_file, 'r', encoding='utf-8') as f:
+            examples = json.load(f)
+    else:
+        examples = None
 
     with open(args.input_json_path, 'r', encoding='utf-8') as f:
         json_data = json.load(f)
